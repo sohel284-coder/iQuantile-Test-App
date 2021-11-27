@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row" id="app">
+    <div class="col-lg-6">
+        <h2>Create File</h2>
+        <form action="" method="POST" @submit.prevent="onSubmit" enctype="multipart/form-data">
+
+            <div class="card-body" style="max-width: 600px;">
+                <div class="form-group row">
+                    <label for="title" class="col-sm-2 col-form-label">Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" placeholder="Plase enter " v-model="name">
+                    </div>
+                </div>
+                <div class="form-group row mt-4">
+                    <label for="title" class="col-sm-2 col-form-label">Upload Files</label>
+                    <input type="button" id="OpenImgUpload" @click.prevent="openImage()"
+                        class="btn btn-lg btn-primary mx-5 mb-3 py-3 w-50" value="Choose File">
+                    <input type="file" @change="onChange(event)" class="file-upload-wrapper d-none" accept="image/*"
+                        id="files" type="file" name="pwd" multiple>
+
+                    <div class="card" v-show="cardFile">
+                        <div class="card-header">List of Files</div>
+                        <ul class="list-group list-group-flush">
+                            <li v-for="file in files" class="list-group-item">
+                                [[file.name]]
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-group row mt-4">
+                    <label for="" class="col-sm-2">Descriptions</label>
+                    <div class="col-sm-4">
+                        <textarea name="" id="" v-model="descriptions"></textarea>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-10">
+                        <button type="submit" class="btn btn-primary btn-lg pull-right">Submit</button>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+    <div class="col-lg-6">
+        <h2>File List</h2>
+        <table class="table table-border bg-light" style="max-width: 780px;" id="taskTable">
+            <thead class="">
+                <tr>
+                    <th>Name</th>
+                    <th>File Name</th>
+                    <th>Descriptions</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="file in fileList">
+                    <td>[[ file.name ]] </td>
+                    <td>[[ file.files ]]</td>
+                    <td>[[ file.descriptions ]]</td>
+                    <td>
+                        <button type="button" class="btn btn-info btn-sm " @click="getFile(file.id)">Edit</button>
+                        <button type="button" class="btn btn-danger btn-sm float-right"
+                            @click="deleteFile(file.id)">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="modal" tabindex="-1" role="dialog" id="editModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" id="closeButton" aria-label="Close">
+                    <span aria-hidden="true">&#x274C;</span>
+                </button>
+            </div>
+            <form action="" method="POST" @submit.prevent="editFile(file)">
+                <div class="modal-body">
+                    <div class="card-body" style="max-width: 600px;">
+                        <div class="form-group row">
+                            <label for="title" class="col-sm-2 col-form-label">Name</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" placeholder=""
+                                    v-model="file.name">
+                            </div>
+                        </div>
+                        <div class="form-group row mt-4">
+                            <label for="" class="col-sm-2">File Name</label>
+                            <input type="text" class="form-control" placeholder="" v-model="file.fileName">
+                        </div>
+                        <div class="form-group row mt-4">
+                            <label for="end_date" class="col-sm-2">Descriptions</label>
+                            <div class="col-sm-4">
+                                <textarea name="" id="" v-model="file.descriptions"></textarea>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+<script>
+    $(document).ready(function () {
+        var app = new Vue({
+            el: "#app",
+            delimiters: ['[[', ']]'],
+            data: {
+                name: '',
+                user: '{{user}}',
+                descriptions: '',
+                files: [],
+                fileName: '',
+                cardFile: false,
+                selectedFile: null,
+                fileList: [],
+                file: {},
+
+            },
+            methods: {
+                openImage: function () {
+                    $("#files").trigger('click');
+                },
+                onChange: function (event) {
+                    var file = event.target.files[0];
+
+                    this.files.push(file);
+                    this.selectedFile = file;
+                    this.cardFile = true;
+                    console.log(this.files);
+                },
+                onSubmit: function (event) {
+                    console.log('test');
+                    var $crf_token = $('[name="csrfmiddlewaretoken"]').attr('value');
+                    let formData = new FormData();
+                    for (let file of this.files) {
+                        console.log(file);
+                        formData.files = file;
+                    }
+                    console.log(this.user);
+                    formData.user = this.user;
+                    formData.name = this.name;
+                    formData.descriptions = this.descriptions;
+                    $.ajax({
+                        method: 'POST',
+                        url: 'api/create-file',
+                        data: JSON.stringify(formData),
+                        headers: {
+                            "X-CSRFToken": $crf_token,
+                            "media-Type": "multipart/form-data",
+                        },
+                    }).then((response) => {
+                        this.name = ''
+                        this.descriptions = '';
+                        alert('successfully saved');
+                    });
+
+
+                },
+                showFileList: function () {
+                    var that = this;
+                    $.ajax({
+                        method: 'GET',
+                        url: 'api/files',
+                        success: function (Response) {
+                            that.fileList = Response;
+                        }
+                    })
+                },
+                getFile: function (file_id) {
+
+                    console.log(file_id);
+                    $.ajax({
+                        method: 'GET',
+                        url: 'api/file/' + file_id,
+                        success: function (Response) {
+                            console.log(Response);
+                            $("#editModal").show();
+                            this.file = (Response);
+                        }
+                    })
+                },
+                editFile: function (file) {
+                    console.log(file);
+                    let form_data = {}
+                    form_data.name = file.name;
+                    form_data.files = file.files;
+                    form_data.descriptions = file.descriptions;
+
+                    $.ajax({
+                        method: 'put',
+                        url: 'api/file/' + file.id,
+                        data: JSON.stringify(form_data),
+                        contentType: 'application/json',
+
+                    }).then((response) => {
+                        this.showFileList();
+                        $("#editModal").hide();
+
+                    }).catch((err) => {
+                        console.log(err);
+                    })
+
+                },
+                deleteFile: function (file_id) {
+                    console.log(file_id);
+                    $.ajax({
+                        method: 'DELETE',
+                        url: 'api/file/' + file_id,
+                        contentType: 'application/json',
+                    }).then((response) => {
+                        this.show();
+                    })
+
+                },
+
+            },
+            mounted: function () {
+                this.showFileList();
+            },
+        });
+    });
+</script>
+{% endblock js %}
